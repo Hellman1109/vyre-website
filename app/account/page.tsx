@@ -6,6 +6,7 @@ import { supabase } from "../lib/supabase";
 
 type Profile = {
     username: string;
+    rsps_username: string | null;
     created_at: string;
 };
 
@@ -14,9 +15,15 @@ export default function AccountPage() {
 
     const [profile, setProfile] = useState<Profile | null>(null);
     const [email, setEmail] = useState("");
+
     const [newUsername, setNewUsername] = useState("");
+    const [rspsUsername, setRspsUsername] = useState("");
+
     const [message, setMessage] = useState("");
+    const [rspsMessage, setRspsMessage] = useState("");
+
     const [saving, setSaving] = useState(false);
+    const [savingRspsUsername, setSavingRspsUsername] = useState(false);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -35,7 +42,7 @@ export default function AccountPage() {
 
             const { data, error } = await supabase
                 .from("profiles")
-                .select("username, created_at")
+                .select("username, rsps_username, created_at")
                 .eq("id", user.id)
                 .single();
 
@@ -44,6 +51,7 @@ export default function AccountPage() {
             } else {
                 setProfile(data);
                 setNewUsername(data.username);
+                setRspsUsername(data.rsps_username ?? "");
             }
 
             setLoading(false);
@@ -52,7 +60,9 @@ export default function AccountPage() {
         loadProfile();
     }, [router]);
 
-    async function handleSaveUsername(event: React.FormEvent<HTMLFormElement>) {
+    async function handleSaveUsername(
+        event: React.FormEvent<HTMLFormElement>
+    ) {
         event.preventDefault();
         setMessage("");
 
@@ -81,7 +91,7 @@ export default function AccountPage() {
             .from("profiles")
             .update({ username: trimmedUsername })
             .eq("id", user.id)
-            .select("username, created_at")
+            .select("username, rsps_username, created_at")
             .single();
 
         if (error) {
@@ -93,10 +103,65 @@ export default function AccountPage() {
         } else {
             setProfile(data);
             setNewUsername(data.username);
+            setRspsUsername(data.rsps_username ?? "");
             setMessage("Username updated successfully!");
         }
 
         setSaving(false);
+    }
+
+    async function handleSaveRspsUsername(
+        event: React.FormEvent<HTMLFormElement>
+    ) {
+        event.preventDefault();
+        setRspsMessage("");
+
+        const trimmedUsername = rspsUsername.trim();
+
+        if (trimmedUsername.length < 1 || trimmedUsername.length > 12) {
+            setRspsMessage(
+                "RSPS username must be between 1 and 12 characters."
+            );
+            return;
+        }
+
+        setSavingRspsUsername(true);
+
+        const {
+            data: { user },
+            error: userError,
+        } = await supabase.auth.getUser();
+
+        if (userError || !user) {
+            setRspsMessage("Your session expired. Please log in again.");
+            setSavingRspsUsername(false);
+            router.replace("/login");
+            return;
+        }
+
+        const { data, error } = await supabase
+            .from("profiles")
+            .update({ rsps_username: trimmedUsername })
+            .eq("id", user.id)
+            .select("rsps_username")
+            .single();
+
+        if (error) {
+            if (error.code === "23505") {
+                setRspsMessage(
+                    "That RSPS username is already linked to another account."
+                );
+            } else {
+                setRspsMessage(
+                    `Could not save RSPS username: ${error.message}`
+                );
+            }
+        } else {
+            setRspsUsername(data.rsps_username ?? "");
+            setRspsMessage("RSPS username linked successfully!");
+        }
+
+        setSavingRspsUsername(false);
     }
 
     async function handleLogout() {
@@ -144,7 +209,9 @@ export default function AccountPage() {
                 </div>
 
                 <div style={styles.infoBox}>
-                    <h2 style={styles.sectionTitle}>Edit Website Username</h2>
+                    <h2 style={styles.sectionTitle}>
+                        Edit Website Username
+                    </h2>
 
                     <form onSubmit={handleSaveUsername}>
                         <label htmlFor="newUsername" style={styles.label}>
@@ -155,7 +222,9 @@ export default function AccountPage() {
                             id="newUsername"
                             type="text"
                             value={newUsername}
-                            onChange={(event) => setNewUsername(event.target.value)}
+                            onChange={(event) =>
+                                setNewUsername(event.target.value)
+                            }
                             minLength={3}
                             maxLength={20}
                             required
@@ -179,15 +248,55 @@ export default function AccountPage() {
                     <h2 style={styles.sectionTitle}>In-Game Account</h2>
 
                     <p>
-                        <strong>RSPS Username:</strong> Not linked
+                        <strong>RSPS Username:</strong>{" "}
+                        {profile?.rsps_username || "Not linked"}
                     </p>
 
                     <p>
-                        <strong>Link Status:</strong> Not linked
+                        <strong>Link Status:</strong>{" "}
+                        {profile?.rsps_username ? "Linked" : "Not linked"}
                     </p>
 
+                    <form onSubmit={handleSaveRspsUsername}>
+                        <label htmlFor="rspsUsername" style={styles.label}>
+                            Your Vyre in-game username
+                        </label>
+
+                        <input
+                            id="rspsUsername"
+                            type="text"
+                            value={rspsUsername}
+                            onChange={(event) =>
+                                setRspsUsername(event.target.value)
+                            }
+                            minLength={1}
+                            maxLength={12}
+                            required
+                            style={styles.input}
+                            placeholder="Enter your RSPS username"
+                        />
+
+                        <button
+                            type="submit"
+                            disabled={savingRspsUsername}
+                            style={styles.button}
+                        >
+                            {savingRspsUsername
+                                ? "Saving..."
+                                : profile?.rsps_username
+                                    ? "Update RSPS Username"
+                                    : "Link RSPS Username"}
+                        </button>
+                    </form>
+
+                    {rspsMessage && (
+                        <p style={styles.message}>{rspsMessage}</p>
+                    )}
+
                     <p style={styles.smallText}>
-                        Game account linking is coming soon.
+                        Make sure this matches the username you use to log into
+                        Vyre. Your store purchases will eventually be delivered
+                        to this account.
                     </p>
                 </div>
 
@@ -201,7 +310,10 @@ export default function AccountPage() {
                     </a>
                 </div>
 
-                <button onClick={handleLogout} style={styles.logoutButton}>
+                <button
+                    onClick={handleLogout}
+                    style={styles.logoutButton}
+                >
                     Logout
                 </button>
 
