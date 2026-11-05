@@ -1,4 +1,6 @@
+
 import AuthNav from "./components/AuthNav";
+
 export default function Home() {
   return (
       <main className="min-h-screen bg-[#090711] text-white">
@@ -12,6 +14,7 @@ export default function Home() {
             <a href="#features" className="hover:text-purple-300">Features</a>
             <a href="/vote" className="hover:text-purple-300">Vote</a>
             <a href="/store" className="hover:text-purple-300">Store</a>
+            <a href="/download" className="hover:text-purple-300">Download</a>
 
             <AuthNav />
 
@@ -45,7 +48,7 @@ export default function Home() {
 
           <div className="mt-10 flex flex-wrap justify-center gap-4">
             <a
-                href="#download"
+                href="/download"
                 className="rounded-lg bg-purple-600 px-8 py-4 font-bold transition hover:bg-purple-500"
             >
               PLAY NOW
@@ -80,7 +83,9 @@ export default function Home() {
         </section>
 
         <section id="features" className="border-t border-purple-900/30 px-8 py-16">
-          <h3 className="text-center text-3xl font-bold">YOUR ADVENTURE STARTS HERE</h3>
+          <h3 className="text-center text-3xl font-bold">
+            YOUR ADVENTURE STARTS HERE
+          </h3>
 
           <div className="mx-auto mt-10 grid max-w-5xl gap-6 md:grid-cols-3">
             {[
