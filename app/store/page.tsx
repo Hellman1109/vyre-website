@@ -46,7 +46,7 @@ export default function StorePage() {
       <section className="mx-auto max-w-6xl px-6 py-16 md:py-24">
         <div className="mx-auto max-w-3xl text-center">
           <p className="text-xs font-bold uppercase tracking-[0.45em] text-violet-400">The official Vyre store</p>
-          <h1 className="mt-5 text-5xl font-black tracking-tight md:text-7xl">BOND <span className="text-violet-400">STORE</span></h1>
+          <h1 className="mt-5 text-5xl font-black tracking-tight md:text-7xl"><span className="text-violet-400">STORE</span></h1>
           <p className="mx-auto mt-6 max-w-xl text-base leading-7 text-gray-400">Choose the exact bond item you want. Each purchase gives you <span className="font-semibold text-white">one matching bond item</span> in-game.</p>
         </div>
 
