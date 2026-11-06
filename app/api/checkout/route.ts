@@ -10,11 +10,18 @@ if (!stripeSecretKey) {
 
 const stripe = new Stripe(stripeSecretKey);
 
+// Prices are set server-side so a browser cannot change the amount charged.
+const packages: Record<string, { name: string; price: number; bonds: number }> = {
+    starter: { name: "Vyre Starter Bond", price: 500, bonds: 1 },
+    adventurer: { name: "Vyre Adventurer Pack", price: 1000, bonds: 2 },
+    champion: { name: "Vyre Champion Pack", price: 2500, bonds: 5 },
+    elite: { name: "Vyre Elite Pack", price: 5000, bonds: 10 },
+    legend: { name: "Vyre Legend Pack", price: 10000, bonds: 20 },
+};
+
 export async function POST(request: Request) {
     try {
         const supabase = await createSupabaseServerClient();
-
-        // Require the buyer to be signed in.
         const {
             data: { user },
             error: authError,
@@ -22,35 +29,26 @@ export async function POST(request: Request) {
 
         if (authError || !user) {
             return NextResponse.json(
-                { error: "Please log in before purchasing." },
+                { error: "Please log in to your Vyre account before purchasing." },
                 { status: 401 }
             );
         }
 
-        const { packageId } = await request.json();
-
-        // Temporary test package.
-        const packages: Record<string, { name: string; price: number }> = {
-            starter: {
-                name: "Vyre Starter Package",
-                price: 500,
-            },
-        };
-
+        const body = await request.json();
+        const packageId = typeof body.packageId === "string" ? body.packageId : "";
         const selectedPackage = packages[packageId];
 
         if (!selectedPackage) {
             return NextResponse.json(
-                { error: "Invalid package selected" },
+                { error: "Invalid bond package selected." },
                 { status: 400 }
             );
         }
 
         const origin = request.headers.get("origin");
-
         if (!origin) {
             return NextResponse.json(
-                { error: "Missing request origin" },
+                { error: "Missing request origin." },
                 { status: 400 }
             );
         }
@@ -63,6 +61,7 @@ export async function POST(request: Request) {
                         currency: "usd",
                         product_data: {
                             name: selectedPackage.name,
+                            description: `${selectedPackage.bonds} Vyre bond${selectedPackage.bonds === 1 ? "" : "s"}`,
                         },
                         unit_amount: selectedPackage.price,
                     },
@@ -75,15 +74,22 @@ export async function POST(request: Request) {
                 packageId,
                 userId: user.id,
                 packageName: selectedPackage.name,
+                bonds: String(selectedPackage.bonds),
             },
         });
+
+        if (!session.url) {
+            return NextResponse.json(
+                { error: "Stripe did not return a checkout URL." },
+                { status: 502 }
+            );
+        }
 
         return NextResponse.json({ url: session.url });
     } catch (error) {
         console.error("Stripe checkout error:", error);
-
         return NextResponse.json(
-            { error: "Unable to create checkout session" },
+            { error: "Unable to create checkout session. Please try again." },
             { status: 500 }
         );
     }
