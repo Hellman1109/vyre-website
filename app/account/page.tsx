@@ -1,8 +1,10 @@
+
 "use client";
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../lib/supabase";
+import Link from "next/link";
 
 type Profile = {
     username: string;
@@ -17,13 +19,13 @@ export default function AccountPage() {
     const [email, setEmail] = useState("");
 
     const [newUsername, setNewUsername] = useState("");
-    const [rspsUsername, setRspsUsername] = useState("");
+    const [linkCode, setLinkCode] = useState("");
 
     const [message, setMessage] = useState("");
     const [rspsMessage, setRspsMessage] = useState("");
 
     const [saving, setSaving] = useState(false);
-    const [savingRspsUsername, setSavingRspsUsername] = useState(false);
+    const [linking, setLinking] = useState(false);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -51,7 +53,6 @@ export default function AccountPage() {
             } else {
                 setProfile(data);
                 setNewUsername(data.username);
-                setRspsUsername(data.rsps_username ?? "");
             }
 
             setLoading(false);
@@ -103,65 +104,77 @@ export default function AccountPage() {
         } else {
             setProfile(data);
             setNewUsername(data.username);
-            setRspsUsername(data.rsps_username ?? "");
             setMessage("Username updated successfully!");
         }
 
         setSaving(false);
     }
 
-    async function handleSaveRspsUsername(
+    async function handleVerifyLink(
         event: React.FormEvent<HTMLFormElement>
     ) {
         event.preventDefault();
         setRspsMessage("");
 
-        const trimmedUsername = rspsUsername.trim();
+        const code = linkCode.trim();
 
-        if (trimmedUsername.length < 1 || trimmedUsername.length > 12) {
-            setRspsMessage(
-                "RSPS username must be between 1 and 12 characters."
-            );
+        if (!/^\d{6}$/.test(code)) {
+            setRspsMessage("Please enter your six-digit verification code.");
             return;
         }
 
-        setSavingRspsUsername(true);
+        setLinking(true);
 
-        const {
-            data: { user },
-            error: userError,
-        } = await supabase.auth.getUser();
+        try {
+            const response = await fetch("/api/account/link", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ code }),
+            });
 
-        if (userError || !user) {
-            setRspsMessage("Your session expired. Please log in again.");
-            setSavingRspsUsername(false);
-            router.replace("/login");
-            return;
-        }
+            const data = await response.json();
 
-        const { data, error } = await supabase
-            .from("profiles")
-            .update({ rsps_username: trimmedUsername })
-            .eq("id", user.id)
-            .select("rsps_username")
-            .single();
-
-        if (error) {
-            if (error.code === "23505") {
-                setRspsMessage(
-                    "That RSPS username is already linked to another account."
-                );
-            } else {
-                setRspsMessage(
-                    `Could not save RSPS username: ${error.message}`
+            if (!response.ok) {
+                throw new Error(
+                    data.error || "Unable to link your RSPS account."
                 );
             }
-        } else {
-            setRspsUsername(data.rsps_username ?? "");
-            setRspsMessage("RSPS username linked successfully!");
-        }
 
-        setSavingRspsUsername(false);
+            const {
+                data: { user },
+            } = await supabase.auth.getUser();
+
+            if (user) {
+                const { data: updatedProfile, error } = await supabase
+                    .from("profiles")
+                    .select("username, rsps_username, created_at")
+                    .eq("id", user.id)
+                    .single();
+
+                if (error) {
+                    throw new Error(
+                        "Account linked, but the profile could not refresh. Reload the page."
+                    );
+                }
+
+                setProfile(updatedProfile);
+            }
+
+            setLinkCode("");
+            setRspsMessage(
+                data.message || "Your Vyre account was linked successfully!"
+            );
+        } catch (error) {
+            setRspsMessage(
+                error instanceof Error
+                    ? error.message
+                    : "Something went wrong. Please try again."
+            );
+        } finally {
+            setLinking(false);
+        }
     }
 
     async function handleLogout() {
@@ -241,11 +254,15 @@ export default function AccountPage() {
                         </button>
                     </form>
 
-                    {message && <p style={styles.message}>{message}</p>}
+                    {message && (
+                        <p style={styles.message}>{message}</p>
+                    )}
                 </div>
 
                 <div style={styles.infoBox}>
-                    <h2 style={styles.sectionTitle}>In-Game Account</h2>
+                    <h2 style={styles.sectionTitle}>
+                        In-Game Account
+                    </h2>
 
                     <p>
                         <strong>RSPS Username:</strong>{" "}
@@ -257,46 +274,67 @@ export default function AccountPage() {
                         {profile?.rsps_username ? "Linked" : "Not linked"}
                     </p>
 
-                    <form onSubmit={handleSaveRspsUsername}>
-                        <label htmlFor="rspsUsername" style={styles.label}>
-                            Your Vyre in-game username
-                        </label>
+                    {!profile?.rsps_username ? (
+                        <>
+                            <p style={styles.smallText}>
+                                Log into Vyre and type{" "}
+                                <strong>::link</strong> in-game.
+                                Enter the six-digit verification code below.
+                            </p>
 
-                        <input
-                            id="rspsUsername"
-                            type="text"
-                            value={rspsUsername}
-                            onChange={(event) =>
-                                setRspsUsername(event.target.value)
-                            }
-                            minLength={1}
-                            maxLength={12}
-                            required
-                            style={styles.input}
-                            placeholder="Enter your RSPS username"
-                        />
+                            <form onSubmit={handleVerifyLink}>
+                                <label htmlFor="linkCode" style={styles.label}>
+                                    Six-digit verification code
+                                </label>
 
-                        <button
-                            type="submit"
-                            disabled={savingRspsUsername}
-                            style={styles.button}
-                        >
-                            {savingRspsUsername
-                                ? "Saving..."
-                                : profile?.rsps_username
-                                    ? "Update RSPS Username"
-                                    : "Link RSPS Username"}
-                        </button>
-                    </form>
+                                <input
+                                    id="linkCode"
+                                    type="text"
+                                    inputMode="numeric"
+                                    autoComplete="one-time-code"
+                                    pattern="[0-9]{6}"
+                                    maxLength={6}
+                                    value={linkCode}
+                                    onChange={(event) =>
+                                        setLinkCode(
+                                            event.target.value.replace(/\D/g, "").slice(0, 6)
+                                        )
+                                    }
+                                    required
+                                    style={styles.input}
+                                    placeholder="Enter your six-digit code"
+                                />
+
+                                <button
+                                    type="submit"
+                                    disabled={linking || linkCode.length !== 6}
+                                    style={{
+                                        ...styles.button,
+                                        opacity:
+                                            linking || linkCode.length !== 6
+                                                ? 0.6
+                                                : 1,
+                                    }}
+                                >
+                                    {linking
+                                        ? "Verifying..."
+                                        : "Verify & Link Account"}
+                                </button>
+                            </form>
+                        </>
+                    ) : (
+                        <p style={styles.smallText}>
+                            Your Vyre in-game account is successfully linked.
+                        </p>
+                    )}
 
                     {rspsMessage && (
                         <p style={styles.message}>{rspsMessage}</p>
                     )}
 
                     <p style={styles.smallText}>
-                        Make sure this matches the username you use to log into
-                        Vyre. Your store purchases will eventually be delivered
-                        to this account.
+                        Your verification code expires after 10 minutes.
+                        Never share it with anyone.
                     </p>
                 </div>
 
@@ -317,9 +355,9 @@ export default function AccountPage() {
                     Logout
                 </button>
 
-                <a href="/" style={styles.homeLink}>
+                <Link href="/" style={styles.homeLink}>
                     Back to Home
-                </a>
+                </Link>
             </div>
         </main>
     );
@@ -335,6 +373,7 @@ const styles: Record<string, React.CSSProperties> = {
         alignItems: "center",
         padding: "24px",
     },
+
     card: {
         width: "100%",
         maxWidth: "600px",
@@ -344,15 +383,18 @@ const styles: Record<string, React.CSSProperties> = {
         padding: "32px",
         textAlign: "center",
     },
+
     title: {
         color: "#b77aff",
         fontSize: "30px",
         marginBottom: "10px",
     },
+
     subtitle: {
         color: "#c4b8d8",
         marginBottom: "28px",
     },
+
     infoBox: {
         background: "#0b0813",
         border: "1px solid #302044",
@@ -363,15 +405,18 @@ const styles: Record<string, React.CSSProperties> = {
         overflowWrap: "anywhere",
         marginBottom: "16px",
     },
+
     sectionTitle: {
         color: "#b77aff",
         marginTop: 0,
     },
+
     label: {
         display: "block",
         marginBottom: "8px",
         color: "#c4b8d8",
     },
+
     input: {
         boxSizing: "border-box",
         width: "100%",
@@ -382,14 +427,17 @@ const styles: Record<string, React.CSSProperties> = {
         padding: "12px",
         marginBottom: "12px",
     },
+
     message: {
         color: "#d8b4fe",
         marginBottom: 0,
     },
+
     smallText: {
         color: "#c4b8d8",
         fontSize: "14px",
     },
+
     buttons: {
         display: "flex",
         gap: "12px",
@@ -397,6 +445,7 @@ const styles: Record<string, React.CSSProperties> = {
         flexWrap: "wrap",
         marginTop: "24px",
     },
+
     button: {
         display: "inline-block",
         background: "#7c3aed",
@@ -408,6 +457,7 @@ const styles: Record<string, React.CSSProperties> = {
         fontWeight: "bold",
         cursor: "pointer",
     },
+
     logoutButton: {
         display: "block",
         width: "100%",
@@ -419,6 +469,7 @@ const styles: Record<string, React.CSSProperties> = {
         borderRadius: "8px",
         cursor: "pointer",
     },
+
     homeLink: {
         display: "inline-block",
         marginTop: "20px",
