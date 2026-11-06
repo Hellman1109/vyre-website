@@ -10,13 +10,14 @@ if (!stripeSecretKey) {
 
 const stripe = new Stripe(stripeSecretKey);
 
-// Prices are set server-side so a browser cannot change the amount charged.
-const packages: Record<string, { name: string; price: number; bonds: number }> = {
-    starter: { name: "Vyre Starter Bond", price: 500, bonds: 1 },
-    adventurer: { name: "Vyre Adventurer Pack", price: 1000, bonds: 2 },
-    champion: { name: "Vyre Champion Pack", price: 2500, bonds: 5 },
-    elite: { name: "Vyre Elite Pack", price: 5000, bonds: 10 },
-    legend: { name: "Vyre Legend Pack", price: 10000, bonds: 20 },
+// One purchase creates one of the matching in-game bond item IDs.
+// Item IDs are from the source owner's supplied product catalogue.
+const bondProducts: Record<string, { name: string; price: number; itemId: number }> = {
+    bond_5: { name: "$5 Bond", price: 500, itemId: 13190 },
+    bond_10: { name: "$10 Bond", price: 1000, itemId: 2403 },
+    bond_25: { name: "$25 Bond", price: 2500, itemId: 2396 },
+    bond_50: { name: "$50 Bond", price: 5000, itemId: 786 },
+    bond_100: { name: "$100 Bond", price: 10000, itemId: 761 },
 };
 
 export async function POST(request: Request) {
@@ -36,45 +37,41 @@ export async function POST(request: Request) {
 
         const body = await request.json();
         const packageId = typeof body.packageId === "string" ? body.packageId : "";
-        const selectedPackage = packages[packageId];
+        const selectedProduct = bondProducts[packageId];
 
-        if (!selectedPackage) {
+        if (!selectedProduct) {
             return NextResponse.json(
-                { error: "Invalid bond package selected." },
+                { error: "Invalid bond item selected." },
                 { status: 400 }
             );
         }
 
         const origin = request.headers.get("origin");
         if (!origin) {
-            return NextResponse.json(
-                { error: "Missing request origin." },
-                { status: 400 }
-            );
+            return NextResponse.json({ error: "Missing request origin." }, { status: 400 });
         }
 
         const session = await stripe.checkout.sessions.create({
             mode: "payment",
-            line_items: [
-                {
-                    price_data: {
-                        currency: "usd",
-                        product_data: {
-                            name: selectedPackage.name,
-                            description: `${selectedPackage.bonds} Vyre bond${selectedPackage.bonds === 1 ? "" : "s"}`,
-                        },
-                        unit_amount: selectedPackage.price,
+            line_items: [{
+                price_data: {
+                    currency: "usd",
+                    product_data: {
+                        name: selectedProduct.name,
+                        description: "One in-game Vyre bond item",
                     },
-                    quantity: 1,
+                    unit_amount: selectedProduct.price,
                 },
-            ],
+                quantity: 1,
+            }],
             success_url: `${origin}/store/success?session_id={CHECKOUT_SESSION_ID}`,
             cancel_url: `${origin}/store`,
             metadata: {
                 packageId,
                 userId: user.id,
-                packageName: selectedPackage.name,
-                bonds: String(selectedPackage.bonds),
+                packageName: selectedProduct.name,
+                itemId: String(selectedProduct.itemId),
+                itemQuantity: "1",
             },
         });
 
