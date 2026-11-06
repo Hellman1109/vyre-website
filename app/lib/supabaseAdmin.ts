@@ -8,7 +8,7 @@ if (!supabaseUrl) {
 }
 
 if (!supabaseSecretKey) {
-    throw new Error("Missing SUPABASE_SECRET_KEY environment variable");
+    throw new Error("Missing SUPABASE_SERVICE_ROLE_KEY environment variable");
 }
 
 export const supabaseAdmin = createClient(
