@@ -4,6 +4,14 @@ import { NextResponse } from "next/server";
 import { createSupabaseServerClient } from "../../lib/supabaseServer";
 
 const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+console.log(
+    "VYRE STRIPE MODE:",
+    stripeSecretKey?.startsWith("sk_live_")
+        ? "LIVE"
+        : stripeSecretKey?.startsWith("sk_test_")
+            ? "TEST"
+            : "UNKNOWN"
+);
 const siteUrl = "https://vyrersps.live";
 
 if (!stripeSecretKey) {
