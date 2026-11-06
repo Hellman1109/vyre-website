@@ -1,9 +1,11 @@
+
 import Stripe from "stripe";
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "../../lib/supabaseAdmin";
 
 const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+const validWebhookSecret: string = webhookSecret!;
 
 if (!stripeSecretKey) {
     throw new Error("Missing STRIPE_SECRET_KEY environment variable");
@@ -32,7 +34,7 @@ export async function POST(request: Request) {
         event = stripe.webhooks.constructEvent(
             body,
             signature,
-            webhookSecret!
+            validWebhookSecret
         );
     } catch (error) {
         console.error("Stripe webhook signature verification failed:", error);
@@ -48,23 +50,34 @@ export async function POST(request: Request) {
             case "checkout.session.completed": {
                 const session = event.data.object as Stripe.Checkout.Session;
 
-                // Only process sessions Stripe confirms as paid.
+                // Only process payments confirmed as paid by Stripe.
                 if (session.payment_status !== "paid") {
-                    console.log("Checkout completed, but payment is not paid:", session.id);
+                    console.log(
+                        "Checkout completed, but payment is not paid:",
+                        session.id
+                    );
                     break;
                 }
 
+                // Read checkout metadata.
                 const userId = session.metadata?.userId;
                 const packageId = session.metadata?.packageId;
                 const packageName = session.metadata?.packageName;
+                const itemId = session.metadata?.itemId;
+                const itemQuantity = session.metadata?.itemQuantity;
 
-                if (!userId || !packageId || !packageName) {
-                    console.error("Paid session is missing required metadata:", {
-                        sessionId: session.id,
-                        userId,
-                        packageId,
-                        packageName,
-                    });
+                // Validate required metadata.
+                if (
+                    !userId ||
+                    !packageId ||
+                    !packageName ||
+                    !itemId ||
+                    !itemQuantity
+                ) {
+                    console.error(
+                        "Paid session is missing required metadata:",
+                        { sessionId: session.id }
+                    );
 
                     return NextResponse.json(
                         { error: "Missing required checkout metadata" },
@@ -72,8 +85,33 @@ export async function POST(request: Request) {
                     );
                 }
 
-                if (session.amount_total === null || !session.currency) {
-                    console.error("Paid session is missing amount or currency:", session.id);
+                // Validate item ID and quantity.
+                const parsedItemId = Number(itemId);
+                const parsedItemQuantity = Number(itemQuantity);
+
+                if (
+                    !Number.isSafeInteger(parsedItemId) ||
+                    parsedItemId <= 0 ||
+                    !Number.isSafeInteger(parsedItemQuantity) ||
+                    parsedItemQuantity <= 0
+                ) {
+                    console.error("Invalid item metadata:", session.id);
+
+                    return NextResponse.json(
+                        { error: "Invalid item metadata" },
+                        { status: 400 }
+                    );
+                }
+
+                // Validate payment amount and currency.
+                if (
+                    session.amount_total === null ||
+                    !session.currency
+                ) {
+                    console.error(
+                        "Paid session is missing amount or currency:",
+                        session.id
+                    );
 
                     return NextResponse.json(
                         { error: "Missing payment amount or currency" },
@@ -81,10 +119,9 @@ export async function POST(request: Request) {
                     );
                 }
 
-                // Store the verified payment in Supabase.
-                // stripe_session_id is unique, so repeated webhook events won't
-                // create duplicate orders.
-                const { error: databaseError } = await supabaseAdmin
+                // Record the verified payment in Supabase.
+                // Existing Stripe sessions are not overwritten on retries.
+                const { data, error: databaseError } = await supabaseAdmin
                     .from("orders")
                     .upsert(
                         {
@@ -96,6 +133,8 @@ export async function POST(request: Request) {
                                     : null,
                             package_id: packageId,
                             package_name: packageName,
+                            item_id: parsedItemId,
+                            item_quantity: parsedItemQuantity,
                             amount_total: session.amount_total,
                             currency: session.currency,
                             payment_status: "paid",
@@ -103,11 +142,16 @@ export async function POST(request: Request) {
                         },
                         {
                             onConflict: "stripe_session_id",
+                            ignoreDuplicates: true,
                         }
-                    );
+                    )
+                    .select("id");
 
                 if (databaseError) {
-                    console.error("Failed to save paid order:", databaseError);
+                    console.error(
+                        "Failed to save paid order:",
+                        databaseError
+                    );
 
                     return NextResponse.json(
                         { error: "Unable to record paid order" },
@@ -115,16 +159,19 @@ export async function POST(request: Request) {
                     );
                 }
 
-                console.log("Verified payment recorded in Supabase:", {
+                console.log("Verified payment processed:", {
                     sessionId: session.id,
                     userId,
                     packageId,
+                    itemId: parsedItemId,
+                    itemQuantity: parsedItemQuantity,
                     amountTotal: session.amount_total,
                     currency: session.currency,
+                    newOrderInserted: Boolean(data?.length),
                 });
 
-                // TODO: Queue secure in-game delivery after order recording
-                // is tested and the RSPS delivery system is connected.
+                // In-game delivery will be connected separately.
+                // Do not deliver items directly from the Stripe webhook.
 
                 break;
             }
@@ -134,6 +181,7 @@ export async function POST(request: Request) {
         }
 
         return NextResponse.json({ received: true });
+
     } catch (error) {
         console.error("Webhook processing error:", error);
 
