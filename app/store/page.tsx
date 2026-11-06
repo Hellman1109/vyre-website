@@ -1,146 +1,54 @@
 "use client";
 
-import { useState } from "react";
-
-const storeCategories = [
-    {
-        name: "Starter Packages",
-        description: "Get your adventure started with helpful extras.",
-        packageId: "starter",
-        buttonText: "Buy Starter Package — $5.00",
-        available: true,
-    },
-    {
-        name: "Cosmetic Items",
-        description: "Customize your character with unique cosmetics.",
-        packageId: "",
-        buttonText: "Coming Soon",
-        available: false,
-    },
-    {
-        name: "Supporter Ranks",
-        description: "Support Vyre and unlock special perks.",
-        packageId: "",
-        buttonText: "Coming Soon",
-        available: false,
-    },
+const packages = [
+  { bonds: 1, price: "$5", name: "Starter Bond", description: "A small boost to get your Vyre adventure moving." },
+  { bonds: 2, price: "$10", name: "Adventurer Pack", description: "A little extra for your next adventure." },
+  { bonds: 5, price: "$25", name: "Champion Pack", description: "More bonds for your in-game goals.", featured: true },
+  { bonds: 10, price: "$50", name: "Elite Pack", description: "A larger bond package for dedicated players." },
+  { bonds: 20, price: "$100", name: "Legend Pack", description: "The largest Vyre bond package." },
 ];
 
 export default function StorePage() {
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState("");
+  return (
+    <main className="min-h-screen bg-[#080711] text-white">
+      <nav className="flex items-center justify-between border-b border-violet-900/40 px-6 py-5 md:px-10">
+        <a href="/" className="text-2xl font-black tracking-[0.28em] text-violet-300">VYRE</a>
+        <a href="https://discord.gg/vyrersps" target="_blank" rel="noopener noreferrer" className="rounded-lg border border-violet-500/40 px-4 py-2 text-sm font-semibold text-violet-200 transition hover:bg-violet-500/10">Discord Support</a>
+      </nav>
 
-    async function handlePurchase(packageId: string) {
-        setLoading(true);
-        setError("");
+      <section className="mx-auto max-w-6xl px-6 py-16 md:py-24">
+        <div className="mx-auto max-w-3xl text-center">
+          <p className="text-xs font-bold uppercase tracking-[0.45em] text-violet-400">The official Vyre store</p>
+          <h1 className="mt-5 text-5xl font-black tracking-tight md:text-7xl">BOND <span className="text-violet-400">STORE</span></h1>
+          <p className="mx-auto mt-6 max-w-xl text-base leading-7 text-gray-400">Choose your bond package and support the world of Vyre. Every package follows the same rate: <span className="font-semibold text-white">1 bond per $5.</span></p>
+        </div>
 
-        try {
-            const response = await fetch("/api/checkout", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({ packageId }),
-            });
+        <div className="mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {packages.map((item) => (
+            <article key={item.bonds} className={`relative flex flex-col rounded-2xl border p-7 ${item.featured ? "border-violet-400 bg-violet-950/30 shadow-[0_0_45px_rgba(139,92,246,0.13)]" : "border-white/10 bg-white/[0.035]"}`}>
+              {item.featured && <span className="absolute -top-3 left-6 rounded-full bg-violet-500 px-3 py-1 text-[10px] font-black uppercase tracking-widest">Popular</span>}
+              <div className="text-sm font-semibold uppercase tracking-[0.2em] text-violet-300">{item.name}</div>
+              <div className="mt-6 flex items-end gap-2">
+                <span className="text-5xl font-black">{item.bonds}</span>
+                <span className="pb-1 text-lg font-bold text-gray-300">Bonds</span>
+              </div>
+              <p className="mt-3 min-h-12 text-sm leading-6 text-gray-400">{item.description}</p>
+              <div className="mt-7 border-t border-white/10 pt-5">
+                <div className="text-3xl font-black">{item.price}<span className="ml-2 text-xs font-medium text-gray-500">USD</span></div>
+                <a href="https://discord.gg/vyrersps" target="_blank" rel="noopener noreferrer" className={`mt-6 block rounded-lg px-5 py-3 text-center text-sm font-extrabold transition ${item.featured ? "bg-violet-500 text-white hover:bg-violet-400" : "bg-white/10 text-white hover:bg-violet-500"}`}>Contact Staff</a>
+              </div>
+            </article>
+          ))}
+        </div>
 
-            const data = await response.json();
+        <div className="mx-auto mt-12 max-w-3xl rounded-xl border border-white/10 bg-white/[0.025] p-6 text-center">
+          <h2 className="font-bold text-white">How to purchase</h2>
+          <p className="mt-2 text-sm leading-6 text-gray-400">Join the Vyre Discord and open a store support ticket. Staff will help arrange your purchase and confirm delivery in-game. Please wait for staff confirmation before sending payment.</p>
+        </div>
 
-            if (!response.ok || !data.url) {
-                throw new Error(data.error || "Unable to start checkout.");
-            }
-
-            window.location.href = data.url;
-        } catch (err) {
-            setError(
-                err instanceof Error
-                    ? err.message
-                    : "Something went wrong. Please try again."
-            );
-            setLoading(false);
-        }
-    }
-
-    return (
-        <main className="min-h-screen bg-[#090711] text-white">
-            <nav className="flex items-center justify-between border-b border-purple-900/40 px-8 py-5">
-                <a
-                    href="/"
-                    className="text-2xl font-black tracking-[0.25em] text-purple-300"
-                >
-                    VYRE
-                </a>
-
-                <a
-                    href="https://discord.gg/vyrersps"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-sm text-gray-300 transition hover:text-purple-300"
-                >
-                    Join Discord
-                </a>
-            </nav>
-
-            <section className="px-6 py-20">
-                <div className="mx-auto max-w-5xl text-center">
-                    <p className="text-sm font-bold uppercase tracking-[0.4em] text-purple-400">
-                        Support your adventure
-                    </p>
-
-                    <h1 className="mt-4 text-5xl font-black">
-                        VYRE <span className="text-purple-400">STORE</span>
-                    </h1>
-
-                    <p className="mx-auto mt-6 max-w-2xl leading-7 text-gray-400">
-                        Browse packages, cosmetics, and supporter rewards.
-                    </p>
-
-                    {error && (
-                        <p className="mx-auto mt-6 max-w-xl rounded-lg border border-red-900/50 bg-red-950/30 p-4 text-sm text-red-300">
-                            {error}
-                        </p>
-                    )}
-
-                    <div className="mt-12 grid gap-5 md:grid-cols-3">
-                        {storeCategories.map((category) => (
-                            <div
-                                key={category.name}
-                                className="rounded-xl border border-purple-900/40 bg-white/[0.03] p-6"
-                            >
-                                <h2 className="text-xl font-bold text-purple-300">
-                                    {category.name}
-                                </h2>
-
-                                <p className="mt-3 text-sm leading-6 text-gray-400">
-                                    {category.description}
-                                </p>
-
-                                <button
-                                    disabled={!category.available || loading}
-                                    onClick={() =>
-                                        handlePurchase(category.packageId)
-                                    }
-                                    className={`mt-6 w-full rounded-lg px-5 py-3 font-bold transition ${
-                                        category.available && !loading
-                                            ? "bg-purple-600 text-white hover:bg-purple-500"
-                                            : "cursor-not-allowed bg-purple-900/40 text-gray-400"
-                                    }`}
-                                >
-                                    {loading && category.available
-                                        ? "Loading Checkout..."
-                                        : category.buttonText}
-                                </button>
-                            </div>
-                        ))}
-                    </div>
-
-                    <a
-                        href="/"
-                        className="mt-10 inline-block text-sm text-gray-400 hover:text-purple-300"
-                    >
-                        ← Back to Home
-                    </a>
-                </div>
-            </section>
-        </main>
-    );
+        <p className="mt-10 text-center text-xs text-gray-600">Vyre is a community-run private game server. Bond purchases are optional.</p>
+        <div className="mt-8 text-center"><a href="/" className="text-sm text-gray-400 transition hover:text-violet-300">← Back to Home</a></div>
+      </section>
+    </main>
+  );
 }
