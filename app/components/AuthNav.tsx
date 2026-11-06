@@ -43,59 +43,34 @@ export default function AuthNav() {
         return null;
     }
 
-    return (
-        <nav>
-            <Link href="/" style={linkStyle}>
-                Home
+    return loggedIn ? (
+        <>
+            <Link href="/account" style={linkStyle}>
+                Account
             </Link>
 
-            <Link href="/vote" style={linkStyle}>
-                Vote
-            </Link>
-
-            <Link href="/store" style={linkStyle}>
-                Store
-            </Link>
-
-            {loggedIn ? (
-                <>
-                    <Link href="/account" style={linkStyle}>
-                        Account
-                    </Link>
-
-                    <button
-                        onClick={handleLogout}
-                        style={{
-                            ...linkStyle,
-                            background: "transparent",
-                            border: "none",
-                            cursor: "pointer",
-                            fontSize: "16px",
-                        }}
-                    >
-                        Logout
-                    </button>
-                </>
-            ) : (
-                <>
-                    <Link href="/login" style={linkStyle}>
-                        Login
-                    </Link>
-
-                    <Link href="/register" style={linkStyle}>
-                        Register
-                    </Link>
-                </>
-            )}
-
-            <a
-                href="https://discord.gg/vyrersps"
-                target="_blank"
-                rel="noreferrer"
-                style={linkStyle}
+            <button
+                onClick={handleLogout}
+                style={{
+                    ...linkStyle,
+                    background: "transparent",
+                    border: "none",
+                    cursor: "pointer",
+                    fontSize: "16px",
+                }}
             >
-                Discord
-            </a>
-        </nav>
+                Logout
+            </button>
+        </>
+    ) : (
+        <>
+            <Link href="/login" style={linkStyle}>
+                Login
+            </Link>
+
+            <Link href="/register" style={linkStyle}>
+                Register
+            </Link>
+        </>
     );
 }
