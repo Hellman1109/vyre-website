@@ -1,21 +1,7 @@
 
 import Stripe from "stripe";
 import { NextResponse } from "next/server";
-import { supabaseAdmin } from "../../lib/supabaseAdmin";
-
-const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
-const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
-const validWebhookSecret: string = webhookSecret!;
-
-if (!stripeSecretKey) {
-    throw new Error("Missing STRIPE_SECRET_KEY environment variable");
-}
-
-if (!webhookSecret) {
-    throw new Error("Missing STRIPE_WEBHOOK_SECRET environment variable");
-}
-
-const stripe = new Stripe(stripeSecretKey);
+import { createClient } from "@supabase/supabase-js";
 
 export async function POST(request: Request) {
     const body = await request.text();
@@ -28,13 +14,23 @@ export async function POST(request: Request) {
         );
     }
 
+    const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+    if (!stripeSecretKey || !webhookSecret) {
+        return NextResponse.json(
+            { error: "Webhook service is temporarily unavailable" },
+            { status: 503 }
+        );
+    }
+    const stripe = new Stripe(stripeSecretKey);
+
     let event: Stripe.Event;
 
     try {
         event = stripe.webhooks.constructEvent(
             body,
             signature,
-            validWebhookSecret
+            webhookSecret
         );
     } catch (error) {
         console.error("Stripe webhook signature verification failed:", error);
@@ -44,6 +40,18 @@ export async function POST(request: Request) {
             { status: 400 }
         );
     }
+
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (!supabaseUrl || !serviceRoleKey) {
+        return NextResponse.json(
+            { error: "Webhook database is temporarily unavailable" },
+            { status: 503 }
+        );
+    }
+    const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey, {
+        auth: { autoRefreshToken: false, persistSession: false },
+    });
 
     try {
         switch (event.type) {
