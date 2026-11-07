@@ -1,8 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
 
-export const runtime = "nodejs";
-
 const USERNAME_PATTERN = /^[a-zA-Z0-9 _-]{1,12}$/;
 const TOP100ARENA_URL = "https://www.top100arena.com/listing/102890/vote";
 
