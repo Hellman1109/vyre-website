@@ -1,94 +1,69 @@
 import { NextResponse } from "next/server";
-import mysql from "mysql2/promise";
+import { createClient } from "@supabase/supabase-js";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-type HighscoreRow = {
+const skillNames = new Set([
+  "attack", "defence", "strength", "hitpoints", "ranged", "prayer",
+  "magic", "cooking", "woodcutting", "fletching", "fishing", "firemaking",
+  "crafting", "smithing", "mining", "herblore", "agility", "thieving",
+  "slayer", "farming", "runecrafting", "hunter", "construction"
+]);
+
+type Highscore = {
   username: string;
   gamemode: string;
-  combat: number;
-  totalLevel: number;
-  totalXp: number;
+  combat_level: number;
+  overall_level: number;
+  overall_exp: number;
+  skill_xp: Record<string, number> | null;
 };
 
-function getPoolConfig() {
-  const host = process.env.HIGHSCORES_DB_HOST;
-  const user = process.env.HIGHSCORES_DB_USER;
-  const password = process.env.HIGHSCORES_DB_PASSWORD;
-  const database = process.env.HIGHSCORES_DB_NAME || "rsps";
-  if (!host || !user || !password) return null;
-  return {
-    host,
-    port: Number(process.env.HIGHSCORES_DB_PORT || 3306),
-    user,
-    password,
-    database,
-    connectTimeout: 5000,
-    waitForConnections: true,
-    connectionLimit: 2,
-    enableKeepAlive: true,
-    ssl: process.env.HIGHSCORES_DB_SSL === "true" ? { rejectUnauthorized: true } : undefined,
-  };
-}
-
 export async function GET(request: Request) {
-  const config = getPoolConfig();
-  if (!config) {
-    return NextResponse.json({ error: "Highscores database is not configured yet.", players: [] }, { status: 503 });
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if (!url || !key) {
+    return NextResponse.json({ error: "Highscores are not configured yet.", players: [] }, { status: 503 });
   }
 
-  const { searchParams } = new URL(request.url);
-  const gamemode = (searchParams.get("mode") || "All").slice(0, 40);
-  const name = (searchParams.get("search") || "").trim().slice(0, 32);
-  const sort = searchParams.get("sort") || "overall";
-  const sortColumns: Record<string, string> = {
-    overall: "overall_exp",
-    attack: "attack_exp",
-    defence: "defence_exp",
-    strength: "strength_exp",
-    hitpoints: "hitpoints_exp",
-    ranged: "ranged_exp",
-    mining: "mining_exp",
-    agility: "agility_exp",
-    herblore: "herblore_exp",
-    thieving: "thieving_exp",
-    slayer: "slayer_exp",
-    farming: "farming_exp",
-    runecrafting: "runecrafting_exp",
-    hunter: "hunter_exp",
-    construction: "construction_exp",
-  };
-  const column = sortColumns[sort] || "overall_exp";
-  const modeFilter = gamemode !== "All" ? "AND gamemode = ?" : "";
-  const nameFilter = name ? "AND username LIKE ?" : "";
-  const params: Array<string> = [];
-  if (gamemode !== "All") params.push(gamemode);
-  if (name) params.push("%" + name.replace(/[\\%_]/g, "\\$&") + "%");
+  const params = new URL(request.url).searchParams;
+  const mode = (params.get("mode") || "All").slice(0, 40);
+  const search = (params.get("search") || "").trim().slice(0, 32);
+  const requestedSort = (params.get("sort") || "overall").toLowerCase();
+  const sort = skillNames.has(requestedSort) ? requestedSort : "overall";
 
-  const db = mysql.createPool(config);
   try {
-    const [rows] = await db.execute<mysql.RowDataPacket[]>(
-      `SELECT username, gamemode, combat_level AS combat, overall_level AS totalLevel,
-              overall_exp AS totalXp, ${column} AS skillXp
-       FROM highscores WHERE 1=1 ${modeFilter} ${nameFilter}
-       ORDER BY ${column} DESC, overall_exp DESC, username ASC LIMIT 100`,
-      params
-    );
-    const players = rows.map((row, index) => ({
-      rank: index + 1,
-      username: String(row.username),
-      mode: String(row.gamemode),
-      combat: Number(row.combat),
-      totalLevel: Number(row.totalLevel),
-      totalXp: Number(row.totalXp),
-      skillXp: Number(row.skillXp),
+    const supabase = createClient(url, key, { auth: { persistSession: false } });
+    let query = supabase.from("vyre_highscores")
+      .select("username,gamemode,combat_level,overall_level,overall_exp,skill_xp");
+    if (mode !== "All") query = query.eq("gamemode", mode);
+    if (search) query = query.ilike("username", `%${search.replace(/[%_,]/g, "")}%`);
+
+    // Skill rankings are sorted in memory because skill XP is stored as JSONB.
+    // Fetch up to 10k records to avoid sorting only a pre-ranked subset.
+    const { data, error } = await query.limit(10000);
+    if (error) throw error;
+    const rows = (data || []) as Highscore[];
+    const xpFor = (p: Highscore) => sort === "overall"
+      ? Number(p.overall_exp || 0)
+      : Number(p.skill_xp?.[sort] || 0);
+    rows.sort((a, b) => xpFor(b) - xpFor(a)
+      || Number(b.overall_exp || 0) - Number(a.overall_exp || 0)
+      || a.username.localeCompare(b.username));
+    const players = rows.slice(0, 100).map((p, i) => ({
+      rank: i + 1,
+      username: p.username,
+      mode: p.gamemode,
+      combat: Number(p.combat_level),
+      totalLevel: Number(p.overall_level),
+      totalXp: Number(p.overall_exp),
+      skillXp: xpFor(p)
     }));
-    return NextResponse.json({ players, sort }, { headers: { "Cache-Control": "public, s-maxage=30, stale-while-revalidate=60" } });
+    return NextResponse.json({ players, sort }, {
+      headers: { "Cache-Control": "public, s-maxage=30, stale-while-revalidate=60" }
+    });
   } catch {
-    // Never return SQL errors or credentials to the browser.
     return NextResponse.json({ error: "Highscores are temporarily unavailable.", players: [] }, { status: 503 });
-  } finally {
-    await db.end();
   }
 }
