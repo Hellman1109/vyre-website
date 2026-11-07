@@ -30,7 +30,10 @@ async function callback(request: Request) {
     const b = createHash("sha256").update(expected).digest();
     if (!supplied || !timingSafeEqual(a, b)) return reply("Forbidden", 403);
 
-    // RULOCUS tester requests must never mark a vote as verified.\n    if (params.has("testmode")) return reply("TEST OK");\n\n    const id = params.get("callback");
+    // RULOCUS tester requests must never mark a vote as verified.
+    if (params.has("testmode")) return reply("TEST OK");
+
+    const id = params.get("callback");
     if (!id || !UUID.test(id)) return reply("Invalid callback ID", 400);
 
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
