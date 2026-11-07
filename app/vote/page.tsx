@@ -1,4 +1,9 @@
+"use client";
+
+import { useState } from "react";
+
 export default function VotePage() {
+    const [username, setUsername] = useState("");
     const voteSites = [
         {
             name: "Top100Arena",
@@ -47,6 +52,25 @@ export default function VotePage() {
                     <p className="mx-auto mt-6 max-w-2xl leading-7 text-gray-400">
                         Help Vyre grow by voting for the server. Voting links are being added. In-game vote rewards are not enabled yet.
                     </p>
+
+                    <div className="mx-auto mt-10 max-w-md rounded-xl border border-purple-900/40 bg-white/[0.03] p-6 text-left">
+                        <label htmlFor="vote-username" className="block text-sm font-bold text-purple-200">
+                            RuneScape Username
+                        </label>
+                        <input
+                            id="vote-username"
+                            type="text"
+                            autoComplete="off"
+                            maxLength={12}
+                            value={username}
+                            onChange={(event) => setUsername(event.target.value)}
+                            placeholder="Enter your Vyre character name"
+                            className="mt-3 w-full rounded-lg border border-purple-800 bg-[#140f22] px-4 py-3 text-white outline-none placeholder:text-gray-500 focus:border-purple-400"
+                        />
+                        <p className="mt-3 text-xs leading-5 text-gray-400">
+                            Player vote tracking is being built. Your username is not submitted or linked to votes yet, and voting does not currently grant in-game rewards.
+                        </p>
+                    </div>
 
                     <div className="mt-12 grid gap-5 md:grid-cols-3">
                         {voteSites.map((site) => (
