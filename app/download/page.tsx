@@ -1,4 +1,3 @@
-
 export default function DownloadPage() {
     return (
         <main className="min-h-screen bg-[#090711] px-6 py-16 text-white">
@@ -20,21 +19,28 @@ export default function DownloadPage() {
                     </h1>
 
                     <p className="mx-auto mt-6 max-w-2xl leading-7 text-gray-400">
-                        Download the official Vyre client and join a world of adventure,
+                        Download the official Vyre Launcher and join a world of adventure,
                         challenging encounters, and a community built for you.
                     </p>
 
-                    <a
-                        href="https://drive.google.com/file/d/1aq5Pfz6U3ohPHGT_daWrpVOSI6SO8c87/view?usp=sharing"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="mt-8 inline-flex rounded-lg bg-purple-600 px-8 py-4 font-bold transition hover:bg-purple-500"
-                    >
-                        DOWNLOAD FOR WINDOWS
-                    </a>
+                    <div className="mt-8 flex flex-col justify-center gap-4 sm:flex-row">
+                        <a
+                            href="https://github.com/Hellman1109/vyre-website/releases/download/launcher-v1.0.1/Vyre.Launcher-1.0.1.exe"
+                            className="inline-flex items-center justify-center rounded-lg bg-purple-600 px-8 py-4 font-bold transition hover:bg-purple-500"
+                        >
+                            DOWNLOAD INSTALLER
+                        </a>
+
+                        <a
+                            href="https://github.com/Hellman1109/vyre-website/releases/download/launcher-v1.0.1/Vyre-Launcher-Portable-v1.0.1.zip"
+                            className="inline-flex items-center justify-center rounded-lg border border-purple-500/60 px-8 py-4 font-bold transition hover:bg-purple-500/10"
+                        >
+                            DOWNLOAD PORTABLE ZIP
+                        </a>
+                    </div>
 
                     <p className="mt-4 text-sm text-gray-500">
-                        Windows · Official Vyre Client
+                        Windows · Vyre Launcher v1.0.1 · Java runtime included
                     </p>
                 </section>
 
@@ -43,23 +49,28 @@ export default function DownloadPage() {
                         Getting Started
                     </h2>
 
-                    <div className="mt-5 grid gap-4 sm:grid-cols-3">
-                        {[
-                            ["01", "Download", "Download the Vyre client ZIP file."],
-                            ["02", "Extract", "Right-click the ZIP file and select Extract All."],
-                            ["03", "Play", "Open the extracted folder and launch Vyre.exe."],
-                        ].map(([number, title, description]) => (
-                            <div
-                                key={number}
-                                className="rounded-xl border border-purple-900/40 bg-white/[0.03] p-6"
-                            >
-                                <p className="text-sm font-bold text-purple-400">{number}</p>
-                                <h3 className="mt-2 text-lg font-bold">{title}</h3>
-                                <p className="mt-2 text-sm leading-6 text-gray-400">
-                                    {description}
-                                </p>
-                            </div>
-                        ))}
+                    <div className="mt-5 grid gap-4 sm:grid-cols-2">
+                        <div className="rounded-xl border border-purple-900/40 bg-white/[0.03] p-6">
+                            <p className="text-sm font-bold text-purple-400">OPTION 01</p>
+                            <h3 className="mt-2 text-lg font-bold">Windows Installer</h3>
+                            <ol className="mt-3 list-inside list-decimal space-y-2 text-sm leading-6 text-gray-400">
+                                <li>Download and open the installer.</li>
+                                <li>Follow the installation prompts.</li>
+                                <li>Launch Vyre from your desktop or Start menu.</li>
+                                <li>Click PLAY NOW.</li>
+                            </ol>
+                        </div>
+
+                        <div className="rounded-xl border border-purple-900/40 bg-white/[0.03] p-6">
+                            <p className="text-sm font-bold text-purple-400">OPTION 02</p>
+                            <h3 className="mt-2 text-lg font-bold">Portable ZIP</h3>
+                            <ol className="mt-3 list-inside list-decimal space-y-2 text-sm leading-6 text-gray-400">
+                                <li>Download the portable ZIP.</li>
+                                <li>Right-click it and select Extract All.</li>
+                                <li>Open the extracted Vyre Launcher folder.</li>
+                                <li>Double-click Vyre Launcher.exe, then click PLAY NOW.</li>
+                            </ol>
+                        </div>
                     </div>
                 </section>
 
