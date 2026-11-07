@@ -56,6 +56,10 @@ export async function POST(request: Request) {
     const voteUrl = new URL(siteId === 4 ? RULOCUS_URL : siteId === 3 ? RSPS_LIST_URL : siteId === 2 ? `${TOPG_URL}-${incentiveId.replace(/-/g, "")}` : TOP100ARENA_URL);
     if (siteId === 1) voteUrl.searchParams.set("incentive", incentiveId);
     if (siteId === 3) voteUrl.searchParams.set("id", incentiveId);
+    if (siteId === 4) {
+        voteUrl.searchParams.set("callback", incentiveId);
+        voteUrl.searchParams.set("username", username);
+    }
     return NextResponse.json({ url: voteUrl.toString() }, {
         headers: { "Cache-Control": "no-store" },
     });
