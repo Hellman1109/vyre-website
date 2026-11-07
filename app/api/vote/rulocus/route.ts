@@ -17,7 +17,7 @@ async function callback(request: Request) {
         const body = await request.text();
         if (body.length > 8192) return reply("Invalid request", 400);
         const form = new URLSearchParams(body);
-        for (const key of ["callback", "secret", "ip"]) {
+        for (const key of ["callback", "secret", "ip", "testmode"]) {
             const fromBody = form.get(key);
             const fromQuery = params.get(key);
             if (fromBody !== null && fromQuery !== null && fromBody !== fromQuery) return reply("Conflicting parameters", 400);
@@ -30,7 +30,7 @@ async function callback(request: Request) {
     const b = createHash("sha256").update(expected).digest();
     if (!supplied || !timingSafeEqual(a, b)) return reply("Forbidden", 403);
 
-    const id = params.get("callback");
+    // RULOCUS tester requests must never mark a vote as verified.\n    if (params.has("testmode")) return reply("TEST OK");\n\n    const id = params.get("callback");
     if (!id || !UUID.test(id)) return reply("Invalid callback ID", 400);
 
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
