@@ -22,7 +22,7 @@ type Highscore = {
 
 export async function GET(request: Request) {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
   if (!url || !key) {
     return NextResponse.json({ error: "Highscores are not configured yet.", players: [] }, { status: 503 });
   }
