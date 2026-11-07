@@ -7,7 +7,7 @@ export default function VotePage() {
     const [voteError, setVoteError] = useState("");
     const [startingVote, setStartingVote] = useState(false);
 
-    async function startVote() {
+    async function startVote(siteId: number) {
         if (startingVote) return;
         setVoteError("");
         const cleanedUsername = username.trim().replace(/ +/g, " ");
@@ -22,7 +22,7 @@ export default function VotePage() {
             const response = await fetch("/api/vote/start", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ username: cleanedUsername }),
+                body: JSON.stringify({ username: cleanedUsername, siteId }),
             });
             const data = await response.json();
             if (!response.ok || typeof data.url !== "string") {
@@ -48,9 +48,9 @@ export default function VotePage() {
             url: "https://www.top100arena.com/listing/102890/vote",
         },
         {
-            name: "Vote Site 2",
-            description: "Help Vyre grow by voting every day.",
-            url: "#",
+            name: "TopG",
+            description: "Vote for Vyre on TopG.",
+            url: "https://topg.org/runescape-private-servers/server-688075",
         },
         {
             name: "Vote Site 3",
@@ -125,7 +125,7 @@ export default function VotePage() {
                                 {site.url !== "#" ? (
                                     <button
                                         type="button"
-                                        onClick={startVote}
+                                        onClick={() => startVote(site.name === "TopG" ? 2 : 1)}
                                         disabled={startingVote}
                                         className="mt-6 w-full rounded-lg bg-purple-600 px-5 py-3 font-bold text-white transition hover:bg-purple-500 disabled:cursor-wait disabled:opacity-60"
                                     >
