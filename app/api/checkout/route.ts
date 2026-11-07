@@ -3,22 +3,7 @@ import Stripe from "stripe";
 import { NextResponse } from "next/server";
 import { createSupabaseServerClient } from "../../lib/supabaseServer";
 
-const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
-console.log(
-    "VYRE STRIPE MODE:",
-    stripeSecretKey?.startsWith("sk_live_")
-        ? "LIVE"
-        : stripeSecretKey?.startsWith("sk_test_")
-            ? "TEST"
-            : "UNKNOWN"
-);
 const siteUrl = "https://vyrersps.live";
-
-if (!stripeSecretKey) {
-    throw new Error("Missing STRIPE_SECRET_KEY environment variable");
-}
-
-const stripe = new Stripe(stripeSecretKey);
 
 const bondProducts: Record<
     string,
@@ -81,6 +66,15 @@ export async function POST(request: Request) {
                 { status: 400 }
             );
         }
+
+        const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+        if (!stripeSecretKey) {
+            return NextResponse.json(
+                { error: "Checkout is temporarily unavailable." },
+                { status: 503 }
+            );
+        }
+        const stripe = new Stripe(stripeSecretKey);
 
         const session = await stripe.checkout.sessions.create({
             mode: "payment",

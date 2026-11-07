@@ -1,7 +1,7 @@
 
 import { NextResponse } from "next/server";
 import { timingSafeEqual } from "crypto";
-import { supabaseAdmin } from "../../../lib/supabaseAdmin";
+import { createClient } from "@supabase/supabase-js";
 
 const allowedProducts: Record<
     string,
@@ -35,6 +35,18 @@ export async function GET(request: Request) {
             { status: 401 }
         );
     }
+
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (!supabaseUrl || !serviceRoleKey) {
+        return NextResponse.json(
+            { error: "Donation service is temporarily unavailable." },
+            { status: 503 }
+        );
+    }
+    const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey, {
+        auth: { autoRefreshToken: false, persistSession: false },
+    });
 
     try {
         const { data: orders, error: ordersError } = await supabaseAdmin
@@ -131,6 +143,18 @@ export async function POST(request: Request) {
             { status: 401 }
         );
     }
+
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (!supabaseUrl || !serviceRoleKey) {
+        return NextResponse.json(
+            { error: "Donation service is temporarily unavailable." },
+            { status: 503 }
+        );
+    }
+    const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey, {
+        auth: { autoRefreshToken: false, persistSession: false },
+    });
 
     try {
         const body = await request.json();
