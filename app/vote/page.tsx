@@ -57,6 +57,11 @@ export default function VotePage() {
             description: "Support Vyre by voting on RSPS-LIST.",
             url: "https://www.rsps-list.com/index.php?a=in&u=vyrerspslive",
         },
+        {
+            name: "RULOCUS",
+            description: "Vote for Vyre on RULOCUS and support our growing community.",
+            url: "https://www.rulocus.com/top-rsps-list/vyre/vote/",
+        },
     ];
 
     return (
@@ -111,7 +116,7 @@ export default function VotePage() {
 
                     {voteError && <p role="alert" className="mx-auto mt-4 max-w-md text-sm text-red-300">{voteError}</p>}
 
-                    <div className="mt-12 grid gap-5 md:grid-cols-3">
+                    <div className="mt-12 grid gap-5 md:grid-cols-2 lg:grid-cols-4">
                         {voteSites.map((site) => (
                             <div
                                 key={site.name}
@@ -125,7 +130,7 @@ export default function VotePage() {
                                 {site.url !== "#" ? (
                                     <button
                                         type="button"
-                                        onClick={() => startVote(site.name === "RSPS-LIST" ? 3 : site.name === "TopG" ? 2 : 1)}
+                                        onClick={() => startVote(site.name === "RULOCUS" ? 4 : site.name === "RSPS-LIST" ? 3 : site.name === "TopG" ? 2 : 1)}
                                         disabled={startingVote}
                                         className="mt-6 w-full rounded-lg bg-purple-600 px-5 py-3 font-bold text-white transition hover:bg-purple-500 disabled:cursor-wait disabled:opacity-60"
                                     >
