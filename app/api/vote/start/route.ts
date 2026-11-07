@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 
 const USERNAME_PATTERN = /^[a-zA-Z0-9 _-]{1,12}$/;
 const TOP100ARENA_URL = "https://www.top100arena.com/listing/102890/vote";
+const TOPG_URL = "https://topg.org/runescape-private-servers/server-688075";
 
 export async function POST(request: Request) {
     const origin = request.headers.get("origin");
@@ -19,6 +20,9 @@ export async function POST(request: Request) {
     }
 
     const rawUsername = (body as { username?: unknown } | null)?.username;
+    const rawSiteId = (body as { siteId?: unknown } | null)?.siteId;
+    const siteId = rawSiteId === 2 ? 2 : rawSiteId === 1 || rawSiteId === undefined ? 1 : null;
+    if (siteId === null) return NextResponse.json({ error: "Invalid voting site." }, { status: 400 });
     const username = typeof rawUsername === "string" ? rawUsername.trim().replace(/ +/g, " ") : "";
     if (!USERNAME_PATTERN.test(username)) {
         return NextResponse.json({ error: "Enter a valid Vyre username (1–12 characters)." }, { status: 400 });
@@ -47,8 +51,8 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: "Could not start your vote. Please try again." }, { status: 500 });
     }
 
-    const voteUrl = new URL(TOP100ARENA_URL);
-    voteUrl.searchParams.set("incentive", incentiveId);
+    const voteUrl = new URL(siteId === 2 ? `${TOPG_URL}-${incentiveId.replace(/-/g, "")}` : TOP100ARENA_URL);
+    if (siteId === 1) voteUrl.searchParams.set("incentive", incentiveId);
     return NextResponse.json({ url: voteUrl.toString() }, {
         headers: { "Cache-Control": "no-store" },
     });
