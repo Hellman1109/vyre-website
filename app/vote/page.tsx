@@ -4,6 +4,43 @@ import { useState } from "react";
 
 export default function VotePage() {
     const [username, setUsername] = useState("");
+    const [voteError, setVoteError] = useState("");
+    const [startingVote, setStartingVote] = useState(false);
+
+    async function startVote() {
+        if (startingVote) return;
+        setVoteError("");
+        const cleanedUsername = username.trim().replace(/ +/g, " ");
+        if (!/^[a-zA-Z0-9 _-]{1,12}$/.test(cleanedUsername)) {
+            setVoteError("Enter a valid Vyre username (1–12 characters).");
+            return;
+        }
+
+        const voteWindow = window.open("about:blank", "_blank");
+        setStartingVote(true);
+        try {
+            const response = await fetch("/api/vote/start", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ username: cleanedUsername }),
+            });
+            const data = await response.json();
+            if (!response.ok || typeof data.url !== "string") {
+                throw new Error(data.error || "Unable to start voting.");
+            }
+            if (voteWindow && !voteWindow.closed) {
+                voteWindow.opener = null;
+                voteWindow.location.replace(data.url);
+            } else {
+                window.location.assign(data.url);
+            }
+        } catch (error) {
+            voteWindow?.close();
+            setVoteError(error instanceof Error ? error.message : "Unable to start voting.");
+        } finally {
+            setStartingVote(false);
+        }
+    }
     const voteSites = [
         {
             name: "Top100Arena",
@@ -68,9 +105,11 @@ export default function VotePage() {
                             className="mt-3 w-full rounded-lg border border-purple-800 bg-[#140f22] px-4 py-3 text-white outline-none placeholder:text-gray-500 focus:border-purple-400"
                         />
                         <p className="mt-3 text-xs leading-5 text-gray-400">
-                            Player vote tracking is being built. Your username is not submitted or linked to votes yet, and voting does not currently grant in-game rewards.
+                            Your username will be saved with a unique vote ID. Vote rewards are not enabled yet.
                         </p>
                     </div>
+
+                    {voteError && <p role="alert" className="mx-auto mt-4 max-w-md text-sm text-red-300">{voteError}</p>}
 
                     <div className="mt-12 grid gap-5 md:grid-cols-3">
                         {voteSites.map((site) => (
@@ -84,14 +123,14 @@ export default function VotePage() {
                                 </p>
 
                                 {site.url !== "#" ? (
-                                    <a
-                                        href={site.url}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="mt-6 inline-block w-full rounded-lg bg-purple-600 px-5 py-3 font-bold text-white transition hover:bg-purple-500"
+                                    <button
+                                        type="button"
+                                        onClick={startVote}
+                                        disabled={startingVote}
+                                        className="mt-6 w-full rounded-lg bg-purple-600 px-5 py-3 font-bold text-white transition hover:bg-purple-500 disabled:cursor-wait disabled:opacity-60"
                                     >
-                                        Vote Now
-                                    </a>
+                                        {startingVote ? "Opening..." : "Vote Now"}
+                                    </button>
                                 ) : (
                                     <button
                                         disabled
