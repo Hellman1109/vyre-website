@@ -1,14 +1,6 @@
 import { NextResponse } from "next/server";
 import { createHash } from "crypto";
 import { createClient } from "@supabase/supabase-js";
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-if (!supabaseUrl || !serviceRoleKey) {
-    throw new Error("Missing Supabase server environment variables");
-}
-
-const supabase = createClient(supabaseUrl, serviceRoleKey);
 export async function POST(request: Request) {
     try {
         const serverSecret = process.env.VYRE_LINK_SECRET;
@@ -20,6 +12,18 @@ export async function POST(request: Request) {
                 { status: 401 }
             );
         }
+
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+        const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+        if (!supabaseUrl || !serviceRoleKey) {
+            return NextResponse.json(
+                { error: "Account linking is temporarily unavailable." },
+                { status: 503 }
+            );
+        }
+        const supabase = createClient(supabaseUrl, serviceRoleKey, {
+            auth: { persistSession: false, autoRefreshToken: false },
+        });
 
         const body = await request.json();
 
