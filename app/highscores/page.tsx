@@ -40,6 +40,16 @@ function levelForXp(xp: number): number {
 }
 const skillIconUrl = (skill: string) =>
   "https://oldschool.runescape.wiki/images/" + encodeURIComponent(skill + "_icon.png");
+function SkillIcon({ skill, size = 18 }: { skill: string; size?: number }) {
+  const [failed, setFailed] = useState(false);
+  useEffect(() => { setFailed(false); }, [skill]);
+  if (skill === "Overall" || failed) {
+    return <span aria-hidden="true" className="inline-flex items-center justify-center" style={{ width: size, height: size, fontSize: size * 0.9 }}>{skillIcons[skill] || "✦"}</span>;
+  }
+  return <img src={skillIconUrl(skill)} alt="" width={size} height={size}
+    loading="lazy" onError={() => setFailed(true)}
+    className="inline-block shrink-0 object-contain" style={{ width: size, height: size }} />;
+}
 const format = (n: number) => Number(n || 0).toLocaleString("en-US");
 
 export default function HighscoresPage() {
@@ -100,13 +110,13 @@ export default function HighscoresPage() {
         </section>
 
         <div aria-label="Skill rankings" className="mb-5 flex flex-wrap gap-2">
-          {skills.map(item => <button key={item} type="button" onClick={() => setSkill(item)} aria-pressed={skill === item} className={`rounded-lg border px-3 py-2 text-xs font-bold transition sm:text-sm ${skill === item ? "border-[#e0b65a] bg-[#e0b65a] text-[#21152b]" : "border-[#48304f] bg-[#23192e] text-[#d1bdd9] hover:border-[#bd945c] hover:text-white"}`}><span aria-hidden="true" className="mr-1.5 inline-flex w-5 items-center justify-center">{item === "Overall" ? "🏆" : <img src={skillIconUrl(item)} alt="" width={18} height={18} loading="lazy" className="h-[18px] w-[18px] object-contain" />}</span>{item}</button>)}
+          {skills.map(item => <button key={item} type="button" onClick={() => setSkill(item)} aria-pressed={skill === item} className={`rounded-lg border px-3 py-2 text-xs font-bold transition sm:text-sm ${skill === item ? "border-[#e0b65a] bg-[#e0b65a] text-[#21152b]" : "border-[#48304f] bg-[#23192e] text-[#d1bdd9] hover:border-[#bd945c] hover:text-white"}`}><span aria-hidden="true" className="mr-1.5 inline-flex w-5 items-center justify-center"><SkillIcon skill={item} /></span>{item}</button>)}
         </div>
 
         <section className="overflow-hidden rounded-xl border border-[#49324f] bg-[#21192d]">
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#46304d] bg-gradient-to-r from-[#382642] to-[#251a32] px-5 py-5">
             <div>
-              <h2 className="text-xl font-black uppercase tracking-wider text-[#e5b85b]"><span aria-hidden="true" className="mr-2 inline-flex align-middle">{skill === "Overall" ? "🏆" : <img src={skillIconUrl(skill)} alt="" width={24} height={24} className="h-6 w-6 object-contain" />}</span>{skill} Rankings</h2>
+              <h2 className="text-xl font-black uppercase tracking-wider text-[#e5b85b]"><span aria-hidden="true" className="mr-2 inline-flex align-middle"><SkillIcon skill={skill} size={24} /></span>{skill} Rankings</h2>
               <p className="mt-1 text-xs text-[#b4a3be]">{loading ? "Updating rankings..." : `${format(players.length)} players shown`}</p>
             </div>
             <span className="rounded-full border border-[#725a47] bg-[#352b32] px-3 py-1 text-xs font-semibold text-[#e6c891]">Vyre Leaderboard</span>
