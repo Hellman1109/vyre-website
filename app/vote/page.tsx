@@ -53,9 +53,9 @@ export default function VotePage() {
             url: "https://topg.org/runescape-private-servers/server-688075",
         },
         {
-            name: "Vote Site 3",
-            description: "Earn rewards by supporting the community.",
-            url: "#",
+            name: "RSPS-LIST",
+            description: "Support Vyre by voting on RSPS-LIST.",
+            url: "https://www.rsps-list.com/index.php?a=in&u=vyrerspslive",
         },
     ];
 
@@ -125,7 +125,7 @@ export default function VotePage() {
                                 {site.url !== "#" ? (
                                     <button
                                         type="button"
-                                        onClick={() => startVote(site.name === "TopG" ? 2 : 1)}
+                                        onClick={() => startVote(site.name === "RSPS-LIST" ? 3 : site.name === "TopG" ? 2 : 1)}
                                         disabled={startingVote}
                                         className="mt-6 w-full rounded-lg bg-purple-600 px-5 py-3 font-bold text-white transition hover:bg-purple-500 disabled:cursor-wait disabled:opacity-60"
                                     >
