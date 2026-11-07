@@ -41,7 +41,7 @@ export async function POST(request: Request) {
     const incentiveId = crypto.randomUUID();
     const { error } = await supabase.from("vote_attempts").insert({
         username,
-        site_id: 1,
+        site_id: siteId,
         incentive_id: incentiveId,
         status: "pending",
     });
