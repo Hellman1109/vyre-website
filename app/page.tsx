@@ -12,6 +12,7 @@ export default function Home() {
           <div className="flex flex-wrap items-center gap-6 text-sm text-gray-300">
             <a href="#home" className="hover:text-purple-300">Home</a>
             <a href="#features" className="hover:text-purple-300">Features</a>
+            <a href="/highscores" className="hover:text-purple-300">Highscores</a>
             <a href="/vote" className="hover:text-purple-300">Vote</a>
             <a href="/store" className="hover:text-purple-300">Store</a>
             <a href="/download" className="hover:text-purple-300">Download</a>
