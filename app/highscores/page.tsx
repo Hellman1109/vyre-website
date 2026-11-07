@@ -28,6 +28,18 @@ const modeIcons: Record<string, string> = {
   "Ultimate Iron Man": "♜", "Group Ironman": "⚒", Extreme: "✦",
   Rogue: "⚔", "Rogue Ironman": "⛨", "Rogue HC Ironman": "☠"
 };
+// OSRS XP thresholds: the player's skill level is derived from saved skill XP.
+function levelForXp(xp: number): number {
+  const target = Math.max(0, Number(xp) || 0);
+  let points = 0;
+  for (let level = 1; level < 99; level++) {
+    points += Math.floor(level + 300 * Math.pow(2, level / 7));
+    if (target < Math.floor(points / 4)) return level;
+  }
+  return 99;
+}
+const skillIconUrl = (skill: string) =>
+  "https://oldschool.runescape.wiki/images/" + encodeURIComponent(skill + "_icon.png");
 const format = (n: number) => Number(n || 0).toLocaleString("en-US");
 
 export default function HighscoresPage() {
@@ -88,13 +100,13 @@ export default function HighscoresPage() {
         </section>
 
         <div aria-label="Skill rankings" className="mb-5 flex flex-wrap gap-2">
-          {skills.map(item => <button key={item} type="button" onClick={() => setSkill(item)} aria-pressed={skill === item} className={`rounded-lg border px-3 py-2 text-xs font-bold transition sm:text-sm ${skill === item ? "border-[#e0b65a] bg-[#e0b65a] text-[#21152b]" : "border-[#48304f] bg-[#23192e] text-[#d1bdd9] hover:border-[#bd945c] hover:text-white"}`}><span aria-hidden="true" className="mr-1.5">{skillIcons[item]}</span>{item}</button>)}
+          {skills.map(item => <button key={item} type="button" onClick={() => setSkill(item)} aria-pressed={skill === item} className={`rounded-lg border px-3 py-2 text-xs font-bold transition sm:text-sm ${skill === item ? "border-[#e0b65a] bg-[#e0b65a] text-[#21152b]" : "border-[#48304f] bg-[#23192e] text-[#d1bdd9] hover:border-[#bd945c] hover:text-white"}`}><span aria-hidden="true" className="mr-1.5 inline-flex w-5 items-center justify-center">{item === "Overall" ? "🏆" : <img src={skillIconUrl(item)} alt="" width={18} height={18} loading="lazy" className="h-[18px] w-[18px] object-contain" />}</span>{item}</button>)}
         </div>
 
         <section className="overflow-hidden rounded-xl border border-[#49324f] bg-[#21192d]">
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#46304d] bg-gradient-to-r from-[#382642] to-[#251a32] px-5 py-5">
             <div>
-              <h2 className="text-xl font-black uppercase tracking-wider text-[#e5b85b]"><span aria-hidden="true" className="mr-2">{skillIcons[skill]}</span>{skill} Rankings</h2>
+              <h2 className="text-xl font-black uppercase tracking-wider text-[#e5b85b]"><span aria-hidden="true" className="mr-2 inline-flex align-middle">{skill === "Overall" ? "🏆" : <img src={skillIconUrl(skill)} alt="" width={24} height={24} className="h-6 w-6 object-contain" />}</span>{skill} Rankings</h2>
               <p className="mt-1 text-xs text-[#b4a3be]">{loading ? "Updating rankings..." : `${format(players.length)} players shown`}</p>
             </div>
             <span className="rounded-full border border-[#725a47] bg-[#352b32] px-3 py-1 text-xs font-semibold text-[#e6c891]">Vyre Leaderboard</span>
@@ -103,7 +115,7 @@ export default function HighscoresPage() {
           <div className="overflow-x-auto">
             <table className="w-full min-w-[580px] text-left">
               <thead className="bg-[#2b2037] text-[11px] font-bold uppercase tracking-widest text-[#b8a4c3]">
-                <tr><th className="w-20 px-4 py-4">Rank</th><th className="px-4 py-4">Player</th><th className="w-28 px-4 py-4 text-right">Level</th><th className="w-[40%] px-4 py-4 text-right">Experience</th></tr>
+                <tr><th className="w-20 px-4 py-4">Rank</th><th className="px-4 py-4">Player</th><th className="w-28 px-4 py-4 text-right">{skill === "Overall" ? "Total Level" : skill + " Level"}</th><th className="w-[40%] px-4 py-4 text-right">Experience</th></tr>
               </thead>
               <tbody>
                 {!loading && players.map(player => {
@@ -117,7 +129,7 @@ export default function HighscoresPage() {
                         <div className="flex items-center gap-2 font-bold text-[#f5edf9]"><span aria-hidden="true" title={player.mode} className="inline-flex h-6 w-6 items-center justify-center rounded-md border border-[#6c4c64] bg-[#3b2946] text-[#e7bd68]">{modeIcons[player.mode] || "◆"}</span>{player.username}</div>
                         <div className="mt-1 flex items-center gap-1.5 text-[11px] font-semibold text-[#e4c36f]"><span className="h-2 w-2 rounded-full bg-[#e6b74b]" />{player.mode}</div>
                       </td>
-                      <td className="px-4 py-3 text-right text-sm font-extrabold">{format(player.totalLevel)}</td>
+                      <td className="px-4 py-3 text-right text-sm font-extrabold">{format(skill === "Overall" ? player.totalLevel : levelForXp(player.skillXp))}</td>
                       <td className="px-4 py-3 text-right">
                         <div className="text-sm font-bold tabular-nums">{format(xp)}</div>
                         <div className="mt-3 h-[3px] overflow-hidden rounded-full bg-[#463750]"><div className="h-full rounded-full bg-gradient-to-r from-[#9b6b52] to-[#e5b953]" style={{ width: `${Math.max(0, Math.min(100, xp / maxXp * 100))}%` }} /></div>
