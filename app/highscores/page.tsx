@@ -15,6 +15,19 @@ type Player = {
 
 const modes = ["All", "Normal", "Iron Man", "Hardcore Iron Man", "Ultimate Iron Man", "Group Ironman", "Extreme", "Rogue", "Rogue Ironman", "Rogue HC Ironman"];
 const skills = ["Overall", "Attack", "Defence", "Strength", "Hitpoints", "Ranged", "Prayer", "Magic", "Cooking", "Woodcutting", "Fletching", "Fishing", "Firemaking", "Crafting", "Smithing", "Mining", "Herblore", "Agility", "Thieving", "Slayer", "Farming", "Runecrafting", "Hunter", "Construction"];
+const skillIcons: Record<string, string> = {
+  Overall: "🏆", Attack: "⚔️", Defence: "🛡️", Strength: "💪", Hitpoints: "❤️",
+  Ranged: "🏹", Prayer: "✨", Magic: "🪄", Cooking: "🍳", Woodcutting: "🪓",
+  Fletching: "🎯", Fishing: "🎣", Firemaking: "🔥", Crafting: "💎",
+  Smithing: "🔨", Mining: "⛏️", Herblore: "🧪", Agility: "🏃",
+  Thieving: "🗝️", Slayer: "💀", Farming: "🌱", Runecrafting: "🔮",
+  Hunter: "🐾", Construction: "🏠"
+};
+const modeIcons: Record<string, string> = {
+  Normal: "◆", "Iron Man": "⛨", "Hardcore Iron Man": "☠",
+  "Ultimate Iron Man": "♜", "Group Ironman": "⚒", Extreme: "✦",
+  Rogue: "⚔", "Rogue Ironman": "⛨", "Rogue HC Ironman": "☠"
+};
 const format = (n: number) => Number(n || 0).toLocaleString("en-US");
 
 export default function HighscoresPage() {
@@ -75,13 +88,13 @@ export default function HighscoresPage() {
         </section>
 
         <div aria-label="Skill rankings" className="mb-5 flex flex-wrap gap-2">
-          {skills.map(item => <button key={item} type="button" onClick={() => setSkill(item)} aria-pressed={skill === item} className={`rounded-lg border px-3 py-2 text-xs font-bold transition sm:text-sm ${skill === item ? "border-[#e0b65a] bg-[#e0b65a] text-[#21152b]" : "border-[#48304f] bg-[#23192e] text-[#d1bdd9] hover:border-[#bd945c] hover:text-white"}`}>{item}</button>)}
+          {skills.map(item => <button key={item} type="button" onClick={() => setSkill(item)} aria-pressed={skill === item} className={`rounded-lg border px-3 py-2 text-xs font-bold transition sm:text-sm ${skill === item ? "border-[#e0b65a] bg-[#e0b65a] text-[#21152b]" : "border-[#48304f] bg-[#23192e] text-[#d1bdd9] hover:border-[#bd945c] hover:text-white"}`}><span aria-hidden="true" className="mr-1.5">{skillIcons[item]}</span>{item}</button>)}
         </div>
 
         <section className="overflow-hidden rounded-xl border border-[#49324f] bg-[#21192d]">
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#46304d] bg-gradient-to-r from-[#382642] to-[#251a32] px-5 py-5">
             <div>
-              <h2 className="text-xl font-black uppercase tracking-wider text-[#e5b85b]">{skill} Rankings</h2>
+              <h2 className="text-xl font-black uppercase tracking-wider text-[#e5b85b]"><span aria-hidden="true" className="mr-2">{skillIcons[skill]}</span>{skill} Rankings</h2>
               <p className="mt-1 text-xs text-[#b4a3be]">{loading ? "Updating rankings..." : `${format(players.length)} players shown`}</p>
             </div>
             <span className="rounded-full border border-[#725a47] bg-[#352b32] px-3 py-1 text-xs font-semibold text-[#e6c891]">Vyre Leaderboard</span>
@@ -101,7 +114,7 @@ export default function HighscoresPage() {
                     <tr key={player.username} className={`border-t border-[#44314e] transition hover:bg-[#3a2b46] ${top ? "bg-[#30233a]" : "bg-[#271d33]"}`}>
                       <td className="px-4 py-3"><span className={`inline-flex h-9 w-9 items-center justify-center rounded-xl text-sm font-black shadow-sm ${medal}`}>{player.rank}</span></td>
                       <td className="px-4 py-3">
-                        <div className="font-bold text-[#f5edf9]">{player.username}</div>
+                        <div className="flex items-center gap-2 font-bold text-[#f5edf9]"><span aria-hidden="true" title={player.mode} className="inline-flex h-6 w-6 items-center justify-center rounded-md border border-[#6c4c64] bg-[#3b2946] text-[#e7bd68]">{modeIcons[player.mode] || "◆"}</span>{player.username}</div>
                         <div className="mt-1 flex items-center gap-1.5 text-[11px] font-semibold text-[#e4c36f]"><span className="h-2 w-2 rounded-full bg-[#e6b74b]" />{player.mode}</div>
                       </td>
                       <td className="px-4 py-3 text-right text-sm font-extrabold">{format(player.totalLevel)}</td>
